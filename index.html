@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Factory Inspection System</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-neutral-900 text-neutral-100 font-sans p-8 min-h-screen">
+
+    <header class="mb-8 border-b border-neutral-700 pb-4 flex justify-between items-end">
+        <div>
+            <h1 class="text-3xl font-bold text-white tracking-wider">FACTORY INSPECTION SYSTEM</h1>
+            <p class="text-neutral-400 mt-1">Real-time ML Defect Detection Line (Vanilla JS)</p>
+        </div>
+        <div class="flex items-center space-x-2">
+            <span class="text-sm font-semibold text-neutral-400">SYSTEM STATUS:</span>
+            <span id="status-indicator" class="text-yellow-400 font-bold">STANDBY</span>
+        </div>
+    </header>
+
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <!-- Controls Column -->
+        <div class="bg-neutral-800 p-6 rounded-xl border border-neutral-700 h-fit">
+            <h2 class="text-xl font-semibold mb-4 text-white border-b border-neutral-700 pb-2">LINE CONTROLS</h2>
+            
+            <div class="mb-4">
+                <label class="block text-sm font-medium text-neutral-400 mb-1">Product Category</label>
+                <select id="category-select" class="w-full bg-neutral-900 border border-neutral-600 rounded p-2 text-white">
+                    <option value="bottle">Bottle</option>
+                    <option value="cable">Cable</option>
+                    <option value="capsule">Capsule</option>
+                    <option value="screw">Screw</option>
+                    <option value="metal_nut">Metal Nut</option>
+                </select>
+            </div>
+
+            <div class="mb-6">
+                <label class="block text-sm font-medium text-neutral-400 mb-1">Image Stream (Select Folder)</label>
+                <input type="file" id="folder-input" webkitdirectory directory multiple class="w-full text-sm text-neutral-400 bg-neutral-900 border border-neutral-600 rounded p-2"/>
+                <p class="text-xs text-neutral-500 mt-2">Loaded <span id="queue-count">0</span> images in queue.</p>
+            </div>
+
+            <div class="flex space-x-4">
+                <button id="start-btn" class="flex-1 bg-green-600 hover:bg-green-500 text-white font-bold py-3 px-4 rounded disabled:opacity-50 transition-colors">START LINE</button>
+                <button id="stop-btn" class="flex-1 bg-red-600 hover:bg-red-500 text-white font-bold py-3 px-4 rounded disabled:opacity-50 transition-colors" disabled>STOP</button>
+            </div>
+        </div>
+
+        <!-- Current Inspection Column -->
+        <div class="bg-neutral-800 p-6 rounded-xl border border-neutral-700 flex flex-col items-center justify-center min-h-[400px]">
+            <h2 class="text-xl font-semibold mb-4 text-white border-b border-neutral-700 w-full pb-2 text-left">CURRENT PRODUCT</h2>
+            
+            <div id="current-display" class="hidden w-full flex flex-col items-center">
+                <div id="img-container" class="relative p-4 rounded-xl mb-4 bg-neutral-900/30 border-2 border-neutral-500 w-full flex justify-center gap-4">
+                    <!-- Original Image -->
+                    <div class="text-center">
+                        <p class="text-xs text-neutral-500 mb-2 font-mono">LIVE FEED</p>
+                        <img id="current-img" src="" class="w-48 h-48 object-cover rounded-lg border border-neutral-700" />
+                    </div>
+                    
+                    <!-- Heatmap Overlay -->
+                    <div class="text-center">
+                        <p class="text-xs text-neutral-500 mb-2 font-mono">AI DIFFERENCE MAP</p>
+                        <img id="heatmap-img" src="" class="w-48 h-48 object-cover rounded-lg border border-neutral-700" />
+                    </div>
+                </div>
+                
+                <div id="prediction-text" class="text-3xl font-black tracking-widest mb-4"></div>
+
+                <div class="w-full bg-neutral-900 p-4 rounded text-sm grid grid-cols-2 gap-4">
+                    <div>
+                        <span class="text-neutral-500 block">Error Score</span>
+                        <span id="error-text" class="font-mono text-white text-lg">0.0000</span>
+                    </div>
+                    <div>
+                        <span class="text-neutral-500 block">Threshold</span>
+                        <span id="threshold-text" class="font-mono text-white text-lg">0.0000</span>
+                    </div>
+                </div>
+            </div>
+            
+            <div id="no-feed" class="text-neutral-500 flex flex-col items-center">
+                <div class="w-64 h-64 bg-neutral-900 rounded-lg flex items-center justify-center mb-4 border-2 border-dashed border-neutral-700">NO FEED</div>
+                <p>Line is currently empty.</p>
+            </div>
+        </div>
+
+        <!-- Stats & History Column -->
+        <div class="flex flex-col gap-8">
+            <div class="bg-neutral-800 p-6 rounded-xl border border-neutral-700">
+                <h2 class="text-xl font-semibold mb-4 text-white border-b border-neutral-700 pb-2">STATISTICS</h2>
+                <div class="grid grid-cols-2 gap-4">
+                    <div class="bg-neutral-900 p-4 rounded text-center">
+                        <span class="block text-neutral-400 text-sm">Inspected</span>
+                        <span id="stat-total" class="block text-3xl font-bold text-white">0</span>
+                    </div>
+                    <div class="bg-neutral-900 p-4 rounded text-center">
+                        <span class="block text-neutral-400 text-sm">Defect Rate</span>
+                        <span id="stat-rate" class="block text-3xl font-bold text-white">0.0%</span>
+                    </div>
+                    <div class="bg-neutral-900 p-4 rounded text-center">
+                        <span class="block text-neutral-400 text-sm">Passed</span>
+                        <span id="stat-pass" class="block text-2xl font-bold text-green-500">0</span>
+                    </div>
+                    <div class="bg-neutral-900 p-4 rounded text-center">
+                        <span class="block text-neutral-400 text-sm">Rejected</span>
+                        <span id="stat-reject" class="block text-2xl font-bold text-red-500">0</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-neutral-800 p-6 rounded-xl border border-neutral-700 flex-1 flex flex-col h-64 overflow-hidden">
+                <h2 class="text-xl font-semibold mb-4 text-white border-b border-neutral-700 pb-2">HISTORY LOG</h2>
+                <div id="history-log" class="flex-1 overflow-y-auto space-y-2 pr-2">
+                    <p class="text-neutral-500 text-sm italic">No items inspected yet.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // State
+        let files = [];
+        let currentIndex = 0;
+        let isRunning = false;
+        let stats = { total: 0, passed: 0, rejected: 0 };
+
+        // DOM Elements
+        const folderInput = document.getElementById('folder-input');
+        const queueCount = document.getElementById('queue-count');
+        const startBtn = document.getElementById('start-btn');
+        const stopBtn = document.getElementById('stop-btn');
+        const categorySelect = document.getElementById('category-select');
+        const statusIndicator = document.getElementById('status-indicator');
+        const historyLog = document.getElementById('history-log');
+
+        // Handle folder selection
+        folderInput.addEventListener('change', (e) => {
+            files = Array.from(e.target.files).filter(f => f.type.startsWith('image/'));
+            queueCount.textContent = files.length;
+            currentIndex = 0;
+            resetStats();
+        });
+
+        startBtn.addEventListener('click', () => {
+            if (files.length === 0 || currentIndex >= files.length) return;
+            isRunning = true;
+            updateControls();
+            processNextImage();
+        });
+
+        stopBtn.addEventListener('click', () => {
+            isRunning = false;
+            updateControls();
+        });
+
+        function updateControls() {
+            startBtn.disabled = isRunning;
+            stopBtn.disabled = !isRunning;
+            folderInput.disabled = isRunning;
+            categorySelect.disabled = isRunning;
+            statusIndicator.textContent = isRunning ? "RUNNING" : "STANDBY";
+            statusIndicator.className = isRunning ? "text-green-400 font-bold animate-pulse" : "text-yellow-400 font-bold";
+        }
+
+        function resetStats() {
+            stats = { total: 0, passed: 0, rejected: 0 };
+            document.getElementById('stat-total').textContent = '0';
+            document.getElementById('stat-pass').textContent = '0';
+            document.getElementById('stat-reject').textContent = '0';
+            document.getElementById('stat-rate').textContent = '0.0%';
+            historyLog.innerHTML = '<p class="text-neutral-500 text-sm italic">No items inspected yet.</p>';
+            document.getElementById('current-display').classList.add('hidden');
+            document.getElementById('no-feed').classList.remove('hidden');
+        }
+
+        async function processNextImage() {
+            if (!isRunning || currentIndex >= files.length) {
+                isRunning = false;
+                updateControls();
+                return;
+            }
+
+            const file = files[currentIndex];
+            const formData = new FormData();
+            formData.append('file', file);
+            formData.append('category', categorySelect.value);
+
+            try {
+                // Pointing back to localhost
+                const res = await fetch('https://shifting-strike-tannery.ngrok-free.dev/predict', {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                if (res.ok) {
+                    const data = await res.json();
+                    updateUI(data, file);
+                }
+            } catch (error) {
+                console.error("API Error", error);
+                isRunning = false;
+                updateControls();
+            }
+
+            if (isRunning) {
+                currentIndex++;
+                setTimeout(processNextImage, 800); // 800ms delay between factory line steps
+            }
+        }
+
+        function updateUI(data, file) {
+            // Update Stats
+            stats.total++;
+            if (data.prediction === 'Good') stats.passed++;
+            else stats.rejected++;
+
+            document.getElementById('stat-total').textContent = stats.total;
+            document.getElementById('stat-pass').textContent = stats.passed;
+            document.getElementById('stat-reject').textContent = stats.rejected;
+            document.getElementById('stat-rate').textContent = ((stats.rejected / stats.total) * 100).toFixed(1) + '%';
+
+            // Show Current Image
+            document.getElementById('no-feed').classList.add('hidden');
+            document.getElementById('current-display').classList.remove('hidden');
+            
+            const imgUrl = URL.createObjectURL(file);
+            document.getElementById('current-img').src = imgUrl;
+            
+            // Set Heatmap Image from Base64 String
+            if (data.heatmap) {
+                document.getElementById('heatmap-img').src = 'data:image/jpeg;base64,' + data.heatmap;
+            }
+            
+            const isGood = data.prediction === 'Good';
+            const imgContainer = document.getElementById('img-container');
+            const predText = document.getElementById('prediction-text');
+            
+            imgContainer.className = `relative p-4 rounded-xl mb-4 border-2 w-full flex justify-center gap-4 ${isGood ? 'bg-green-900/30 border-green-500' : 'bg-red-900/30 border-red-500'}`;
+            predText.className = `text-3xl font-black tracking-widest mb-4 ${isGood ? 'text-green-500' : 'text-red-500'}`;
+            predText.textContent = isGood ? '🤩' : '🤡';
+            
+            document.getElementById('error-text').textContent = data.reconstruction_error.toFixed(6);
+            document.getElementById('threshold-text').textContent = data.threshold.toFixed(6);
+
+            // Add to History
+            if (stats.total === 1) historyLog.innerHTML = ''; // Clear default text
+            const historyItem = document.createElement('div');
+            historyItem.className = `flex justify-between items-center bg-neutral-900 p-3 rounded border-l-4 mb-2 ${isGood ? 'border-green-500' : 'border-red-500'}`;
+            historyItem.innerHTML = `
+                <span class="text-sm font-mono text-neutral-300 truncate w-32">${file.name}</span>
+                <span class="text-sm font-bold ${isGood ? 'text-green-500' : 'text-red-500'}">${data.prediction.toUpperCase()}</span>
+                <span class="text-xs font-mono text-neutral-500">${data.reconstruction_error.toFixed(4)}</span>
+            `;
+            historyLog.prepend(historyItem); // Add to top
+        }
+    </script>
+</body>
+</html>
