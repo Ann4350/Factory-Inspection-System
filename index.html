@@ -5,28 +5,36 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Factory Inspection System</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* Smooth transitions for UI state changes */
+        #current-display, #no-feed { transition: opacity 0.3s ease; }
+    </style>
 </head>
-<body class="bg-neutral-900 text-neutral-100 font-sans p-8 min-h-screen">
+<body class="bg-neutral-950 text-neutral-100 font-sans p-8 min-h-screen selection:bg-green-500 selection:text-white">
 
-    <header class="mb-8 border-b border-neutral-700 pb-4 flex justify-between items-end">
+    <header class="mb-8 border-b border-neutral-800 pb-4 flex justify-between items-end">
         <div>
-            <h1 class="text-3xl font-bold text-white tracking-wider">FACTORY INSPECTION SYSTEM</h1>
-            <p class="text-neutral-400 mt-1">Real-time ML Defect Detection Line (Vanilla JS)</p>
+            <h1 class="text-3xl font-black text-white tracking-widest">FACTORY INSPECTION SYSTEM</h1>
+            <p class="text-neutral-500 mt-1 font-mono text-sm uppercase tracking-wide">Real-time ML Defect Detection Line</p>
         </div>
-        <div class="flex items-center space-x-2">
-            <span class="text-sm font-semibold text-neutral-400">SYSTEM STATUS:</span>
-            <span id="status-indicator" class="text-yellow-400 font-bold">STANDBY</span>
+        <div class="flex items-center space-x-3 bg-neutral-900 px-4 py-2 rounded-lg border border-neutral-800">
+            <span class="text-xs font-bold text-neutral-500 tracking-wider">SYSTEM STATUS</span>
+            <div class="flex items-center space-x-2">
+                <span id="status-dot" class="w-2.5 h-2.5 rounded-full bg-yellow-400"></span>
+                <span id="status-indicator" class="text-yellow-400 font-bold text-sm tracking-wide">STANDBY</span>
+            </div>
         </div>
     </header>
 
-    <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        
         <!-- Controls Column -->
-        <div class="bg-neutral-800 p-6 rounded-xl border border-neutral-700 h-fit">
-            <h2 class="text-xl font-semibold mb-4 text-white border-b border-neutral-700 pb-2">LINE CONTROLS</h2>
+        <div class="bg-neutral-900 p-6 rounded-xl border border-neutral-800 shadow-xl h-fit">
+            <h2 class="text-sm font-bold tracking-widest mb-6 text-neutral-400 border-b border-neutral-800 pb-2">LINE CONTROLS</h2>
             
-            <div class="mb-4">
-                <label class="block text-sm font-medium text-neutral-400 mb-1">Product Category</label>
-                <select id="category-select" class="w-full bg-neutral-900 border border-neutral-600 rounded p-2 text-white">
+            <div class="mb-5">
+                <label class="block text-xs font-bold text-neutral-500 tracking-wide mb-2">PRODUCT CATEGORY</label>
+                <select id="category-select" class="w-full bg-neutral-950 border border-neutral-700 rounded-lg p-3 text-white focus:outline-none focus:border-neutral-500 transition-colors">
                     <option value="bottle">Bottle</option>
                     <option value="cable">Cable</option>
                     <option value="capsule">Capsule</option>
@@ -35,107 +43,116 @@
                 </select>
             </div>
 
-            <div class="mb-6">
-                <label class="block text-sm font-medium text-neutral-400 mb-1">Image Stream (Select Folder)</label>
-                <input type="file" id="folder-input" webkitdirectory directory multiple class="w-full text-sm text-neutral-400 bg-neutral-900 border border-neutral-600 rounded p-2"/>
-                <p class="text-xs text-neutral-500 mt-2">Loaded <span id="queue-count">0</span> images in queue.</p>
+            <div class="mb-8">
+                <label class="block text-xs font-bold text-neutral-500 tracking-wide mb-2">IMAGE STREAM</label>
+                <input type="file" id="folder-input" webkitdirectory directory multiple class="w-full text-sm text-neutral-400 bg-neutral-950 border border-neutral-700 rounded-lg p-2 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-xs file:font-bold file:bg-neutral-800 file:text-white hover:file:bg-neutral-700 cursor-pointer transition-colors"/>
+                <div class="flex justify-between items-center mt-3">
+                    <p class="text-xs text-neutral-500 font-mono">Queue loaded</p>
+                    <p class="text-xs font-bold text-white bg-neutral-800 px-2 py-1 rounded"><span id="queue-count">0</span> items</p>
+                </div>
             </div>
 
-            <div class="flex space-x-4">
-                <button id="start-btn" class="flex-1 bg-green-600 hover:bg-green-500 text-white font-bold py-3 px-4 rounded disabled:opacity-50 transition-colors">START LINE</button>
-                <button id="stop-btn" class="flex-1 bg-red-600 hover:bg-red-500 text-white font-bold py-3 px-4 rounded disabled:opacity-50 transition-colors" disabled>STOP</button>
+            <div class="flex space-x-3">
+                <button id="start-btn" class="flex-1 bg-green-600 hover:bg-green-500 text-white font-bold py-4 rounded-lg disabled:opacity-30 disabled:hover:bg-green-600 transition-all shadow-[0_0_15px_rgba(22,163,74,0.15)] disabled:shadow-none tracking-wider text-sm">START LINE</button>
+                <button id="stop-btn" class="flex-1 bg-red-600 hover:bg-red-500 text-white font-bold py-4 rounded-lg disabled:opacity-30 disabled:hover:bg-red-600 transition-all shadow-[0_0_15px_rgba(220,38,38,0.15)] disabled:shadow-none tracking-wider text-sm" disabled>STOP</button>
             </div>
         </div>
 
-        <!-- Current Inspection Column -->
-        <div class="bg-neutral-800 p-6 rounded-xl border border-neutral-700 flex flex-col items-center justify-center min-h-[400px]">
-            <h2 class="text-xl font-semibold mb-4 text-white border-b border-neutral-700 w-full pb-2 text-left">CURRENT PRODUCT</h2>
+        <!-- Current Inspection Column (FIXED LAYOUT) -->
+        <div class="bg-neutral-900 p-6 rounded-xl border border-neutral-800 shadow-xl flex flex-col min-h-[500px]">
+            <!-- Header pinned to top -->
+            <h2 class="text-sm font-bold tracking-widest mb-6 text-neutral-400 border-b border-neutral-800 pb-2">CURRENT PRODUCT</h2>
             
-            <div id="current-display" class="hidden w-full flex flex-col items-center">
-                <div id="img-container" class="relative p-4 rounded-xl mb-4 bg-neutral-900/30 border-2 border-neutral-500 w-full flex justify-center gap-4">
-                    <!-- Original Image -->
-                    <div class="text-center">
-                        <p class="text-xs text-neutral-500 mb-2 font-mono">LIVE FEED</p>
-                        <img id="current-img" src="" class="w-48 h-48 object-cover rounded-lg border border-neutral-700" />
+            <!-- Dynamic Content Area -->
+            <div class="relative flex-1 w-full flex items-center justify-center">
+                
+                <!-- Empty State -->
+                <div id="no-feed" class="absolute inset-0 flex flex-col items-center justify-center text-neutral-600 w-full">
+                    <div class="w-64 h-64 bg-neutral-950 rounded-xl flex items-center justify-center mb-4 border-2 border-dashed border-neutral-800">
+                        <svg class="w-8 h-8 opacity-30" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+                    </div>
+                    <p class="font-mono text-sm">Waiting for feed...</p>
+                </div>
+
+                <!-- Inspection State -->
+                <div id="current-display" class="hidden absolute inset-0 w-full flex flex-col items-center justify-between">
+                    
+                    <div id="img-container" class="relative p-4 rounded-xl bg-neutral-950 border border-neutral-700 w-full flex justify-center gap-6 transition-all duration-300 h-64">
+                        <div class="flex flex-col items-center h-full">
+                            <p class="text-[10px] text-neutral-500 mb-2 font-bold tracking-widest uppercase">Live Feed</p>
+                            <img id="current-img" src="" class="h-44 w-44 object-cover rounded-lg border border-neutral-800 bg-neutral-900" />
+                        </div>
+                        
+                        <div class="flex flex-col items-center h-full">
+                            <p class="text-[10px] text-neutral-500 mb-2 font-bold tracking-widest uppercase">Difference Map</p>
+                            <img id="heatmap-img" src="" class="h-44 w-44 object-cover rounded-lg border border-neutral-800 bg-neutral-900" />
+                        </div>
                     </div>
                     
-                    <!-- Heatmap Overlay -->
-                    <div class="text-center">
-                        <p class="text-xs text-neutral-500 mb-2 font-mono">AI DIFFERENCE MAP</p>
-                        <img id="heatmap-img" src="" class="w-48 h-48 object-cover rounded-lg border border-neutral-700" />
-                    </div>
-                </div>
-                
-                <div id="prediction-text" class="text-3xl font-black tracking-widest mb-4"></div>
+                    <div id="prediction-text" class="text-4xl mt-4 mb-2"></div>
 
-                <div class="w-full bg-neutral-900 p-4 rounded text-sm grid grid-cols-2 gap-4">
-                    <div>
-                        <span class="text-neutral-500 block">Error Score</span>
-                        <span id="error-text" class="font-mono text-white text-lg">0.0000</span>
-                    </div>
-                    <div>
-                        <span class="text-neutral-500 block">Threshold</span>
-                        <span id="threshold-text" class="font-mono text-white text-lg">0.0000</span>
+                    <div class="w-full bg-neutral-950 p-4 rounded-lg border border-neutral-800 grid grid-cols-2 gap-4 mt-auto">
+                        <div class="pl-2 border-l-2 border-neutral-700">
+                            <span class="text-[10px] text-neutral-500 font-bold tracking-widest block uppercase mb-1">Error Score</span>
+                            <span id="error-text" class="font-mono text-white text-xl">0.0000</span>
+                        </div>
+                        <div class="pl-2 border-l-2 border-neutral-700">
+                            <span class="text-[10px] text-neutral-500 font-bold tracking-widest block uppercase mb-1">Threshold</span>
+                            <span id="threshold-text" class="font-mono text-white text-xl">0.0000</span>
+                        </div>
                     </div>
                 </div>
-            </div>
-            
-            <div id="no-feed" class="text-neutral-500 flex flex-col items-center">
-                <div class="w-64 h-64 bg-neutral-900 rounded-lg flex items-center justify-center mb-4 border-2 border-dashed border-neutral-700">NO FEED</div>
-                <p>Line is currently empty.</p>
             </div>
         </div>
 
         <!-- Stats & History Column -->
-        <div class="flex flex-col gap-8">
-            <div class="bg-neutral-800 p-6 rounded-xl border border-neutral-700">
-                <h2 class="text-xl font-semibold mb-4 text-white border-b border-neutral-700 pb-2">STATISTICS</h2>
-                <div class="grid grid-cols-2 gap-4">
-                    <div class="bg-neutral-900 p-4 rounded text-center">
-                        <span class="block text-neutral-400 text-sm">Inspected</span>
-                        <span id="stat-total" class="block text-3xl font-bold text-white">0</span>
+        <div class="flex flex-col gap-6">
+            <div class="bg-neutral-900 p-6 rounded-xl border border-neutral-800 shadow-xl">
+                <h2 class="text-sm font-bold tracking-widest mb-6 text-neutral-400 border-b border-neutral-800 pb-2">STATISTICS</h2>
+                <div class="grid grid-cols-2 gap-3">
+                    <div class="bg-neutral-950 p-4 rounded-lg border border-neutral-800 text-center">
+                        <span class="block text-neutral-500 text-xs font-bold tracking-wider mb-1">INSPECTED</span>
+                        <span id="stat-total" class="block text-2xl font-black text-white">0</span>
                     </div>
-                    <div class="bg-neutral-900 p-4 rounded text-center">
-                        <span class="block text-neutral-400 text-sm">Defect Rate</span>
-                        <span id="stat-rate" class="block text-3xl font-bold text-white">0.0%</span>
+                    <div class="bg-neutral-950 p-4 rounded-lg border border-neutral-800 text-center">
+                        <span class="block text-neutral-500 text-xs font-bold tracking-wider mb-1">DEFECT RATE</span>
+                        <span id="stat-rate" class="block text-2xl font-black text-white">0.0%</span>
                     </div>
-                    <div class="bg-neutral-900 p-4 rounded text-center">
-                        <span class="block text-neutral-400 text-sm">Passed</span>
-                        <span id="stat-pass" class="block text-2xl font-bold text-green-500">0</span>
+                    <div class="bg-neutral-950 p-4 rounded-lg border border-neutral-800 text-center">
+                        <span class="block text-neutral-500 text-xs font-bold tracking-wider mb-1">PASSED</span>
+                        <span id="stat-pass" class="block text-xl font-black text-green-500">0</span>
                     </div>
-                    <div class="bg-neutral-900 p-4 rounded text-center">
-                        <span class="block text-neutral-400 text-sm">Rejected</span>
-                        <span id="stat-reject" class="block text-2xl font-bold text-red-500">0</span>
+                    <div class="bg-neutral-950 p-4 rounded-lg border border-neutral-800 text-center">
+                        <span class="block text-neutral-500 text-xs font-bold tracking-wider mb-1">REJECTED</span>
+                        <span id="stat-reject" class="block text-xl font-black text-red-500">0</span>
                     </div>
                 </div>
             </div>
 
-            <div class="bg-neutral-800 p-6 rounded-xl border border-neutral-700 flex-1 flex flex-col h-64 overflow-hidden">
-                <h2 class="text-xl font-semibold mb-4 text-white border-b border-neutral-700 pb-2">HISTORY LOG</h2>
-                <div id="history-log" class="flex-1 overflow-y-auto space-y-2 pr-2">
-                    <p class="text-neutral-500 text-sm italic">No items inspected yet.</p>
+            <div class="bg-neutral-900 p-6 rounded-xl border border-neutral-800 shadow-xl flex-1 flex flex-col min-h-[250px] max-h-[300px]">
+                <h2 class="text-sm font-bold tracking-widest mb-4 text-neutral-400 border-b border-neutral-800 pb-2">HISTORY LOG</h2>
+                <div id="history-log" class="flex-1 overflow-y-auto space-y-2 pr-2 scrollbar-thin scrollbar-thumb-neutral-700 scrollbar-track-transparent">
+                    <p class="text-neutral-600 text-sm italic text-center mt-4 font-mono">System initialized.</p>
                 </div>
             </div>
         </div>
     </div>
 
     <script>
-        // State
         let files = [];
         let currentIndex = 0;
         let isRunning = false;
         let stats = { total: 0, passed: 0, rejected: 0 };
 
-        // DOM Elements
         const folderInput = document.getElementById('folder-input');
         const queueCount = document.getElementById('queue-count');
         const startBtn = document.getElementById('start-btn');
         const stopBtn = document.getElementById('stop-btn');
         const categorySelect = document.getElementById('category-select');
         const statusIndicator = document.getElementById('status-indicator');
+        const statusDot = document.getElementById('status-dot');
         const historyLog = document.getElementById('history-log');
 
-        // Handle folder selection
         folderInput.addEventListener('change', (e) => {
             files = Array.from(e.target.files).filter(f => f.type.startsWith('image/'));
             queueCount.textContent = files.length;
@@ -160,8 +177,10 @@
             stopBtn.disabled = !isRunning;
             folderInput.disabled = isRunning;
             categorySelect.disabled = isRunning;
+            
             statusIndicator.textContent = isRunning ? "RUNNING" : "STANDBY";
-            statusIndicator.className = isRunning ? "text-green-400 font-bold animate-pulse" : "text-yellow-400 font-bold";
+            statusIndicator.className = isRunning ? "text-green-400 font-bold text-sm tracking-wide" : "text-yellow-400 font-bold text-sm tracking-wide";
+            statusDot.className = isRunning ? "w-2.5 h-2.5 rounded-full bg-green-500 animate-pulse shadow-[0_0_8px_#22c55e]" : "w-2.5 h-2.5 rounded-full bg-yellow-400";
         }
 
         function resetStats() {
@@ -170,7 +189,7 @@
             document.getElementById('stat-pass').textContent = '0';
             document.getElementById('stat-reject').textContent = '0';
             document.getElementById('stat-rate').textContent = '0.0%';
-            historyLog.innerHTML = '<p class="text-neutral-500 text-sm italic">No items inspected yet.</p>';
+            historyLog.innerHTML = '<p class="text-neutral-600 text-sm italic text-center mt-4 font-mono">Queue loaded. Ready.</p>';
             document.getElementById('current-display').classList.add('hidden');
             document.getElementById('no-feed').classList.remove('hidden');
         }
@@ -188,7 +207,6 @@
             formData.append('category', categorySelect.value);
 
             try {
-                // Pointing back to localhost
                 const res = await fetch('https://shifting-strike-tannery.ngrok-free.dev/predict', {
                     method: 'POST',
                     body: formData
@@ -206,12 +224,11 @@
 
             if (isRunning) {
                 currentIndex++;
-                setTimeout(processNextImage, 800); // 800ms delay between factory line steps
+                setTimeout(processNextImage, 800);
             }
         }
 
         function updateUI(data, file) {
-            // Update Stats
             stats.total++;
             if (data.prediction === 'Good') stats.passed++;
             else stats.rejected++;
@@ -221,14 +238,12 @@
             document.getElementById('stat-reject').textContent = stats.rejected;
             document.getElementById('stat-rate').textContent = ((stats.rejected / stats.total) * 100).toFixed(1) + '%';
 
-            // Show Current Image
             document.getElementById('no-feed').classList.add('hidden');
             document.getElementById('current-display').classList.remove('hidden');
             
             const imgUrl = URL.createObjectURL(file);
             document.getElementById('current-img').src = imgUrl;
             
-            // Set Heatmap Image from Base64 String
             if (data.heatmap) {
                 document.getElementById('heatmap-img').src = 'data:image/jpeg;base64,' + data.heatmap;
             }
@@ -237,23 +252,29 @@
             const imgContainer = document.getElementById('img-container');
             const predText = document.getElementById('prediction-text');
             
-            imgContainer.className = `relative p-4 rounded-xl mb-4 border-2 w-full flex justify-center gap-4 ${isGood ? 'bg-green-900/30 border-green-500' : 'bg-red-900/30 border-red-500'}`;
-            predText.className = `text-3xl font-black tracking-widest mb-4 ${isGood ? 'text-green-500' : 'text-red-500'}`;
+            // Clean up old classes
+            imgContainer.className = `relative p-4 rounded-xl bg-neutral-950 border w-full flex justify-center gap-6 transition-all duration-300 h-64 ${
+                isGood 
+                ? 'border-green-500/50 shadow-[0_0_30px_rgba(34,197,94,0.1)]' 
+                : 'border-red-500/50 shadow-[0_0_30px_rgba(239,68,68,0.1)]'
+            }`;
+            
             predText.textContent = isGood ? '🤩' : '🤡';
             
             document.getElementById('error-text').textContent = data.reconstruction_error.toFixed(6);
             document.getElementById('threshold-text').textContent = data.threshold.toFixed(6);
+            document.getElementById('error-text').className = `font-mono text-xl ${isGood ? 'text-green-400' : 'text-red-400'}`;
 
-            // Add to History
-            if (stats.total === 1) historyLog.innerHTML = ''; // Clear default text
+            if (stats.total === 1) historyLog.innerHTML = ''; 
+            
             const historyItem = document.createElement('div');
-            historyItem.className = `flex justify-between items-center bg-neutral-900 p-3 rounded border-l-4 mb-2 ${isGood ? 'border-green-500' : 'border-red-500'}`;
+            historyItem.className = `flex justify-between items-center bg-neutral-950 p-3 rounded-lg border-l-4 mb-2 ${isGood ? 'border-green-500' : 'border-red-500'}`;
             historyItem.innerHTML = `
-                <span class="text-sm font-mono text-neutral-300 truncate w-32">${file.name}</span>
-                <span class="text-sm font-bold ${isGood ? 'text-green-500' : 'text-red-500'}">${data.prediction.toUpperCase()}</span>
-                <span class="text-xs font-mono text-neutral-500">${data.reconstruction_error.toFixed(4)}</span>
+                <span class="text-xs font-mono text-neutral-400 truncate w-32">${file.name}</span>
+                <span class="text-xs font-black tracking-widest ${isGood ? 'text-green-500' : 'text-red-500'}">${data.prediction.toUpperCase()}</span>
+                <span class="text-[10px] font-mono text-neutral-500">${data.reconstruction_error.toFixed(4)}</span>
             `;
-            historyLog.prepend(historyItem); // Add to top
+            historyLog.prepend(historyItem);
         }
     </script>
 </body>
